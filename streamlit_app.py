@@ -2,7 +2,7 @@ import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
 import io
-from datetime import datetime
+from datetime import datetime, timedelta
 
 st.set_page_config(page_title="项目数据抓取工具", layout="centered")
 st.title("📊 项目数据每日抓取工具")
@@ -50,14 +50,31 @@ if uploaded_file is not None:
         st.error(f"❌ 密钥无效：{e}")
         st.stop()
 
-    today = datetime.today().strftime("%Y-%m-%d")
-    date_input = st.text_input(
-        "📅 输入要抓取的日期（YYYY-MM-DD）",
-        value=today,
-        help="支持多个日期，用逗号、空格分开"
-    )
+    st.markdown("### 📅 选择要抓取的日期")
 
-    目标日期列表 = [d.strip() for d in date_input.replace(",", " ").split() if d.strip()]
+# 单选模式：选择一个日期
+single_date = st.date_input(
+    "选择单个日期（默认今天）",
+    value=datetime.today(),
+    help="直接选一个日期抓取"
+)
+
+# 多选模式：可以选多个日期
+multi_dates = st.multiselect(
+    "或者选择多个日期（可多选）",
+    options=[(datetime.today() - timedelta(days=i)) for i in range(30)][::-1],  # 最近30天可选
+    default=[datetime.today()],
+    format_func=lambda d: d.strftime("%Y-%m-%d"),
+    help="按住 Command（Mac）或 Ctrl（Win）可多选"
+)
+
+# 合并最终日期列表（优先多选，如果没选多选就用单选）
+if multi_dates:
+    目标日期列表 = [d.strftime("%Y-%m-%d") for d in multi_dates]
+else:
+    目标日期列表 = [single_date.strftime("%Y-%m-%d")]
+
+st.write(f"**将抓取以下日期：** {', '.join(目标日期列表)}")
 
     if not 目标日期列表:
         st.warning("请至少输入一个日期")
