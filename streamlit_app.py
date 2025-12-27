@@ -3,6 +3,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 import io
 from datetime import datetime, timedelta
+import json
 
 st.set_page_config(page_title="项目数据抓取工具", layout="centered")
 st.title("📊 项目数据每日抓取工具")
@@ -26,7 +27,6 @@ if uploaded_file is not None:
         # 处理上传的 bytes → 转为 dict
         file_bytes = uploaded_file.getvalue()
         file_str = file_bytes.decode("utf-8")
-        import json
         service_account_info = json.loads(file_str)
 
         creds = Credentials.from_service_account_info(
@@ -45,7 +45,7 @@ if uploaded_file is not None:
     # === 只保留一个多选日历 ===
     st.markdown("### 📅 选择要抓取的日期（支持多选）")
 
-    # 生成最近30天的日期选项（从今天往前）
+    # 生成最近30天的日期选项
     date_options = [(datetime.today() - timedelta(days=i)) for i in range(30)][::-1]
 
     selected_dates = st.multiselect(
@@ -68,7 +68,7 @@ if uploaded_file is not None:
         {"id": "1UeYJ9e2almMVjO_X0Ts6oE7CmCoNN5IPO82cMMugLBw", "name": "jeetup项目", "sheets": ["ADC"], "date_col": 1, "result_cols": [12]},
         {"id": "1F_cu4GpofGbT0DGqNzO6vTYOUKTreGTRQzIQgnhs6is", "name": "lakhup项目", "sheets": ["ADC"], "date_col": 1, "result_cols": [4]},
         {"id": "1LTnKqi_h_fcalboeB75IxVTGjJsh6HtO7_YOYH6oHic", "name": "kanzplay项目", "sheets": ["YSS", "FS", "UD"], "date_col": 1, "result_cols": [4]},
-        {"id": "1tSrNji1nheomDN_jjHZpFVJwzY2-DGQ_N-jAqbS95yg", "name": "falcowin项目", "sheets": ["ADC", "YSS","AdRachel","FS","Pizzads"], "date_col": 1, "result_cols": [3]}
+        {"id": "1tSrNji1nheomDN_jjHZpFVJwzY2-DGQ_N-jAqbS95yg", "name": "falcowin项目", "sheets": ["ADC", "YSS", "AdRachel", "FS", "Pizzads"], "date_col": 1, "result_cols": [3]}
     ]
 
     if st.button("🚀 开始抓取", type="primary"):
@@ -83,4 +83,43 @@ if uploaded_file is not None:
                             data = sheet.get_all_values()
                             if len(data) > 1:
                                 for row in data[1:]:
-                                    if len(row) >= 配置["date_col"] and row[配置["date
+                                    if len(row) >= 配置["date_col"] and row[配置["date_col"] - 1].strip() in 目标日期列表:
+                                        值 = [row[i - 1].strip() if i <= len(row) else "" for i in 配置["result_cols"]]
+                                        值.extend([配置["name"], sheet_name, row[配置["date_col"] - 1].strip()])
+                                        所有结果.append(值)
+                        except Exception:
+                            continue
+                except Exception as e:
+                    st.error(f"无法打开 {配置['name']}：{e}")
+
+        if 所有结果:
+            max_cols = max(len(r) - 3 for r in 所有结果)
+            表头 = ["日期", "来源项目", "来源Sheet"] + [f"数据列{i}" for i in range(1, max_cols + 1)]
+
+            新结果 = []
+            for r in 所有结果:
+                数据 = r[:-3]
+                新行 = [r[-1], r[-3], r[-2]] + 数据 + [""] * (max_cols - len(数据))
+                新结果.append(新行)
+
+            st.success(f"🎉 抓取完成！共找到 {len(所有结果)} 条数据")
+            st.dataframe(新结果, use_container_width=True)
+
+            output = io.StringIO()
+            output.write("\t".join(表头) + "\n")
+            for row in 新结果:
+                output.write("\t".join(map(str, row)) + "\n")
+
+            st.download_button(
+                "📥 下载结果TXT文件",
+                data=output.getvalue(),
+                file_name=f"项目数据_{'_'.join(目标日期列表)}.txt",
+                mime="text/plain"
+            )
+        else:
+            st.warning("所选日期内没有找到任何数据")
+
+else:
+    st.info("👆 请先上传 service_account.json 密钥文件（只需上传一次）")
+
+st.caption("你的专属项目数据抓取工具 • 永久免费运行")
