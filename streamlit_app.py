@@ -24,7 +24,7 @@ uploaded_file = st.file_uploader("🔑 上传 service_account.json 密钥文件"
 
 if uploaded_file is not None:
     try:
-        # 处理上传的 bytes → 转为 dict
+        # 处理上传的 bytes → 转为字符串 → 解析为 dict
         file_bytes = uploaded_file.getvalue()
         file_str = file_bytes.decode("utf-8")
         service_account_info = json.loads(file_str)
@@ -42,16 +42,20 @@ if uploaded_file is not None:
         st.error(f"❌ 密钥认证失败：{str(e)}")
         st.stop()
 
-    # === 只保留一个多选日历 ===
+    # === 多选日历（唯一日期选择方式）===
     st.markdown("### 📅 选择要抓取的日期（支持多选）")
 
-    # 生成最近30天的日期选项
-    date_options = [(datetime.today() - timedelta(days=i)) for i in range(30)][::-1]
+    # 生成最近30天的日期选项（从今天往前）
+    date_options = [(datetime.today() - timedelta(days=i)).date() for i in range(30)]
+    date_options.reverse()  # 让今天在最上面
+
+    # 默认选中今天
+    default_date = datetime.today().date()
 
     selected_dates = st.multiselect(
         "点选日期（按住 Command 键可多选，默认选中今天）",
         options=date_options,
-        default=[datetime.today()],
+        default=[default_date],
         format_func=lambda d: d.strftime("%Y-%m-%d"),
         help="可一次选择多个日期进行抓取"
     )
@@ -63,7 +67,7 @@ if uploaded_file is not None:
     目标日期列表 = [d.strftime("%Y-%m-%d") for d in selected_dates]
     st.write(f"**将抓取以下日期：** {', '.join(目标日期列表)}")
 
-    # 项目配置（你的4个项目）
+    # 你的4个项目配置
     表格配置列表 = [
         {"id": "1UeYJ9e2almMVjO_X0Ts6oE7CmCoNN5IPO82cMMugLBw", "name": "jeetup项目", "sheets": ["ADC"], "date_col": 1, "result_cols": [12]},
         {"id": "1F_cu4GpofGbT0DGqNzO6vTYOUKTreGTRQzIQgnhs6is", "name": "lakhup项目", "sheets": ["ADC"], "date_col": 1, "result_cols": [4]},
@@ -122,4 +126,4 @@ if uploaded_file is not None:
 else:
     st.info("👆 请先上传 service_account.json 密钥文件（只需上传一次）")
 
-st.caption("你的专属项目数据抓取工具 • 永久免费运行")
+st.caption("你的专属项目数据抓取工具 • 永久免费运行 • 2025版")
