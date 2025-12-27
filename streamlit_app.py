@@ -22,11 +22,28 @@ uploaded_file = st.file_uploader("🔑 上传 service_account.json 密钥文件"
 
 if uploaded_file is not None:
     try:
-        json_data = uploaded_file.getvalue()
+        # 读取上传的文件（是 bytes 类型）
+        file_bytes = uploaded_file.getvalue()
+        
+        # 强制转为字符串，再解析成字典
+        file_str = file_bytes.decode("utf-8")
+        import json
+        service_account_info = json.loads(file_str)
+        
+        # 现在用字典创建凭证
         creds = Credentials.from_service_account_info(
-            json_data,
+            service_account_info,
             scopes=['https://www.googleapis.com/auth/spreadsheets','https://www.googleapis.com/auth/drive']
         )
+        client = gspread.authorize(creds)
+        st.success("✅ 密钥认证成功！已连接 Google Sheets")
+    except json.JSONDecodeError:
+        st.error("❌ 文件不是有效的 JSON 格式，请检查是否上传了正确的 service_account.json")
+        st.stop()
+    except Exception as e:
+        st.error(f"❌ 密钥认证失败：{str(e)}")
+        st.error("提示：请确保上传的是从 Google Cloud 直接下载的 .json 密钥文件，不要打开编辑过")
+        st.stop()
         client = gspread.authorize(creds)
         st.success("✅ 密钥认证成功！")
     except Exception as e:
