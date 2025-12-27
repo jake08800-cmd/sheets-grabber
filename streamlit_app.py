@@ -50,31 +50,21 @@ if uploaded_file is not None:
         st.error(f"❌ 密钥无效：{e}")
         st.stop()
 
-    st.markdown("### 📅 选择要抓取的日期")
+    st.markdown("### 📅 选择要抓取的日期（支持多选）")
 
-# 单选模式：选择一个日期
-single_date = st.date_input(
-    "选择单个日期（默认今天）",
-    value=datetime.today(),
-    help="直接选一个日期抓取"
-)
-
-# 多选模式：可以选多个日期
-multi_dates = st.multiselect(
-    "或者选择多个日期（可多选）",
-    options=[(datetime.today() - timedelta(days=i)) for i in range(30)][::-1],  # 最近30天可选
+selected_dates = st.multiselect(
+    "点选日期（按住 Command 可多选，默认今天）",
+    options=[(datetime.today() - timedelta(days=i)) for i in range(30)][::-1],
     default=[datetime.today()],
-    format_func=lambda d: d.strftime("%Y-%m-%d"),
-    help="按住 Command（Mac）或 Ctrl（Win）可多选"
+    format_func=lambda d: d.strftime("%Y-%m-%d")
 )
 
-# 合并最终日期列表（优先多选，如果没选多选就用单选）
-if multi_dates:
-    目标日期列表 = [d.strftime("%Y-%m-%d") for d in multi_dates]
-else:
-    目标日期列表 = [single_date.strftime("%Y-%m-%d")]
+if not selected_dates:
+    st.warning("请至少选择一个日期")
+    st.stop()
 
-st.write(f"**将抓取以下日期：** {', '.join(目标日期列表)}")
+目标日期列表 = [d.strftime("%Y-%m-%d") for d in selected_dates]
+st.write(f"**将抓取：** {', '.join(目标日期列表)}")
 
     if not 目标日期列表:
         st.warning("请至少输入一个日期")
