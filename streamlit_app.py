@@ -17,14 +17,14 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main { background-color: #f8f9fa; }
-    .stButton>button { 
-        background-color: #ff4b4b; 
-        color: white; 
-        height: 3em; 
-        width: 100%; 
-        border-radius: 10px; 
-        font-size: 20px; 
-        font-weight: bold; 
+    .stButton>button {
+        background-color: #ff4b4b;
+        color: white;
+        height: 3em;
+        width: 100%;
+        border-radius: 10px;
+        font-size: 20px;
+        font-weight: bold;
     }
     .stDownloadButton>button {
         background-color: #00d4aa;
@@ -49,10 +49,10 @@ st.markdown("**专业 · 简洁 · 高效** — 你的专属数据助手")
 with st.sidebar:
     st.image("https://streamlit.io/images/brand/streamlit-mark-color.png", width=100)
     st.header("🌟 当前支持项目")
-    projects = ["jeetup项目", "lakhup项目", "kanzplay项目", "falcowin项目","sakerwin项目"]
-    colors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7"
+    projects = ["jeetup项目", "lakhup项目", "kanzplay项目", "falcowin项目", "snakerwin项目"]  # 修复名称
+    colors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7"]  # 添加第5个颜色
     for p, c in zip(projects, colors):
-        st.markdown(f"<span class='project-tag' style='background-color:{c}; color:white'>{p}</span>", unsafe_allow_html=True)
+        st.markdown(f"<span class='project-tag' style='background-color:{c}; color:black'>{p}</span>", unsafe_allow_html=True)
     st.caption(f"今天是 {datetime.today().strftime('%Y-%m-%d')}")
 
 # 上传密钥
@@ -63,7 +63,6 @@ if uploaded_file is not None:
         file_bytes = uploaded_file.getvalue()
         file_str = file_bytes.decode("utf-8")
         service_account_info = json.loads(file_str)
-
         creds = Credentials.from_service_account_info(
             service_account_info,
             scopes=['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
@@ -76,12 +75,9 @@ if uploaded_file is not None:
 
     # 多选日历
     st.markdown("### 📅 选择要抓取的日期（支持多选）")
-
     date_options = [(datetime.today() - timedelta(days=i)).date() for i in range(30)]
     date_options.reverse()
-
     default_date = datetime.today().date()
-
     selected_dates = st.multiselect(
         "点选日期（按住 Command 可多选，默认今天）",
         options=date_options,
@@ -89,21 +85,19 @@ if uploaded_file is not None:
         format_func=lambda d: d.strftime("%Y-%m-%d"),
         help="可选择多个日期批量抓取"
     )
-
     if not selected_dates:
         st.warning("请至少选择一个日期")
         st.stop()
-
     目标日期列表 = [d.strftime("%Y-%m-%d") for d in selected_dates]
     st.info(f"**即将抓取：** {', '.join(目标日期列表)}")
 
-    # 项目配置
+    # 项目配置（新增 snakerwin 项目，已修复所有错误）
     表格配置列表 = [
         {"id": "1UeYJ9e2almMVjO_X0Ts6oE7CmCoNN5IPO82cMMugLBw", "name": "jeetup项目", "sheets": ["ADC", "UD"], "date_col": 1, "result_cols": [12]},
         {"id": "1F_cu4GpofGbT0DGqNzO6vTYOUKTreGTRQzIQgnhs6is", "name": "lakhup项目", "sheets": ["ADC"], "date_col": 1, "result_cols": [4]},
         {"id": "1LTnKqi_h_fcalboeB75IxVTGjJsh6HtO7_YOYH6oHic", "name": "kanzplay项目", "sheets": ["YSS", "FS", "UD"], "date_col": 1, "result_cols": [4]},
-        {"id": "1tSrNji1nheomDN_jjHZpFVJwzY2-DGQ_N-jAqbS95yg", "name": "falcowin项目", "sheets": ["ADC", "YSS", "AdRachel", "FS", "Pizzads"], "date_col": 1, "result_cols": [3]}
-        {"id": "1laHyK6yB_mmc1ZyC79VCD3WOrkRylDXtzuGJJ9HjLhQ", "name": "sakerwin项目", "sheets": ["ADC", "YOJOY","YSS", "Pizzads","AdRachel","UD", "FS"],"date_col": 1,"result_cols":[4]}
+        {"id": "1tSrNji1nheomDN_jjHZpFVJwzY2-DGQ_N-jAqbS95yg", "name": "falcowin项目", "sheets": ["ADC", "YSS", "AdRachel", "FS", "Pizzads"], "date_col": 1, "result_cols": [3]},
+        {"id": "1laHyK6yB_mmc1ZyC79VCD3WOrkRylDXtzuGJJ9HjLhQ", "name": "snakerwin项目", "sheets": ["ADC", "YOJOY", "YSS", "Pizzads", "AdRachel", "UD", "FS"], "date_col": 1, "result_cols": [4]}  # 修复拼写 + 加逗号
     ]
 
     if st.button("🚀 开始抓取数据", type="primary"):
@@ -130,15 +124,14 @@ if uploaded_file is not None:
         if 所有结果:
             max_cols = max(len(r) - 3 for r in 所有结果)
             表头 = ["日期", "来源项目", "来源Sheet"] + [f"数据列{i}" for i in range(1, max_cols + 1)]
-
             新结果 = []
             for r in 所有结果:
                 数据 = r[:-3]
                 新行 = [r[-1], r[-3], r[-2]] + 数据 + [""] * (max_cols - len(数据))
                 新结果.append(新行)
-
-            st.success(f"🎉 抓取完成！共找到 **{len(所有结果)}** 条数据")
             
+            st.success(f"🎉 抓取完成！共找到 **{len(所有结果)}** 条数据")
+           
             # 美化表格显示
             st.dataframe(
                 新结果,
@@ -146,13 +139,12 @@ if uploaded_file is not None:
                 hide_index=True,
                 column_config={0: st.column_config.DateColumn("日期")}
             )
-
+            
             # 下载按钮
             output = io.StringIO()
             output.write("\t".join(表头) + "\n")
             for row in 新结果:
                 output.write("\t".join(map(str, row)) + "\n")
-
             st.download_button(
                 "📥 下载结果文件（TXT）",
                 data=output.getvalue(),
