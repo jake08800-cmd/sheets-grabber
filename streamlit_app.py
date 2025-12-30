@@ -97,7 +97,7 @@ if uploaded_file is not None:
         {"id": "1F_cu4GpofGbT0DGqNzO6vTYOUKTreGTRQzIQgnhs6is", "name": "lakhup项目", "sheets": ["ADC"], "date_col": 1, "result_cols": [4]},
         {"id": "1LTnKqi_h_fcalboeB75IxVTGjJsh6HtO7_YOYH6oHic", "name": "kanzplay项目", "sheets": ["YSS", "FS", "UD"], "date_col": 1, "result_cols": [4]},
         {"id": "1tSrNji1nheomDN_jjHZpFVJwzY2-DGQ_N-jAqbS95yg", "name": "falcowin项目", "sheets": ["ADC", "YSS", "AdRachel", "FS", "Pizzads"], "date_col": 1, "result_cols": [3]},
-        {"id": "1laHyK6yB_mmc1ZyC79VCD3WOrkRylDXtzuGJJ9HjLhQ", "name": "snakerwin项目", "sheets": ["ADC", "YOJOY", "YSS", "Pizzads", "AdRachel", "UD", "FS"], "date_col": 1, "result_cols": [4]}  # 修复拼写 + 加逗号
+        {"id": "1laHyK6yB_mmc1ZyC79VCD3WOrkRylDXtzuGJJ9HjLhQ", "name": "snakerwin项目", "sheets": ["ADC", "YOJOY", "YSS", "Pizzads", "AdRachel", "UD", "FS"], "date_col": 1, "result_cols": [3]}  # 修复拼写 + 加逗号
     ]
 
     if st.button("🚀 开始抓取数据", type="primary"):
