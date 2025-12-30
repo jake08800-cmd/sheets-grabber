@@ -49,7 +49,7 @@ st.markdown("**专业 · 简洁 · 高效** — 你的专属数据助手")
 with st.sidebar:
     st.image("https://streamlit.io/images/brand/streamlit-mark-color.png", width=100)
     st.header("🌟 当前支持项目")
-    projects = ["jeetup项目", "lakhup项目", "kanzplay项目", "falcowin项目"]
+    projects = ["jeetup项目", "lakhup项目", "kanzplay项目", "falcowin项目"，"sakerwin项目"]
     colors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4"]
     for p, c in zip(projects, colors):
         st.markdown(f"<span class='project-tag' style='background-color:{c}; color:white'>{p}</span>", unsafe_allow_html=True)
@@ -103,6 +103,7 @@ if uploaded_file is not None:
         {"id": "1F_cu4GpofGbT0DGqNzO6vTYOUKTreGTRQzIQgnhs6is", "name": "lakhup项目", "sheets": ["ADC"], "date_col": 1, "result_cols": [4]},
         {"id": "1LTnKqi_h_fcalboeB75IxVTGjJsh6HtO7_YOYH6oHic", "name": "kanzplay项目", "sheets": ["YSS", "FS", "UD"], "date_col": 1, "result_cols": [4]},
         {"id": "1tSrNji1nheomDN_jjHZpFVJwzY2-DGQ_N-jAqbS95yg", "name": "falcowin项目", "sheets": ["ADC", "YSS", "AdRachel", "FS", "Pizzads"], "date_col": 1, "result_cols": [3]}
+        {"id": "1laHyK6yB_mmc1ZyC79VCD3WOrkRylDXtzuGJJ9HjLhQ", "name": "snakerwin项目", "sheets": ["ADC", "YOJOY","YSS", "Pizzads","AdRachel","UD", "FS"],"date_col": 1,"resuit_cols":[4]}
     ]
 
     if st.button("🚀 开始抓取数据", type="primary"):
