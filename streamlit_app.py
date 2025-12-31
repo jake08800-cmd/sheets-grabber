@@ -9,7 +9,7 @@ import json
 st.set_page_config(
     page_title="项目数据抓取工具",
     page_icon="📊",
-    layout="wide",  # 宽屏布局，更舒服
+    layout="wide",
     initial_sidebar_state="expanded"
 )
 
@@ -46,13 +46,33 @@ st.markdown("""
 st.title("📊 项目数据每日抓取工具")
 st.markdown("**专业 · 简洁 · 高效** — 你的专属数据助手")
 
+# ================ 侧边栏项目展示 + 多选 ================
 with st.sidebar:
     st.image("https://streamlit.io/images/brand/streamlit-mark-color.png", width=100)
     st.header("🌟 当前支持项目")
-    projects = ["jeetup项目", "lakhup项目", "kanzplay项目", "falcowin项目", "snakerwin项目"]  # 修复名称
-    colors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7"]  # 添加第5个颜色
-    for p, c in zip(projects, colors):
+
+    # 所有项目列表（用于展示和选择）
+    all_projects = [
+        "jeetup项目", "lakhup项目", "kanzplay项目", 
+        "falcowin项目", "snakerwin项目"
+    ]
+    colors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7"]
+
+    # 美化展示
+    for p, c in zip(all_projects, colors):
         st.markdown(f"<span class='project-tag' style='background-color:{c}; color:black'>{p}</span>", unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.subheader("🛠 抓取设置")
+
+    # 新增：项目多选框（默认全选）
+    selected_projects = st.multiselect(
+        "选择要抓取的项目",
+        options=all_projects,
+        default=all_projects,  # 默认全选
+        help="不选任何项目将无法抓取"
+    )
+
     st.caption(f"今天是 {datetime.today().strftime('%Y-%m-%d')}")
 
 # 上传密钥
@@ -91,14 +111,21 @@ if uploaded_file is not None:
     目标日期列表 = [d.strftime("%Y-%m-%d") for d in selected_dates]
     st.info(f"**即将抓取：** {', '.join(目标日期列表)}")
 
-    # 项目配置（新增 snakerwin 项目，已修复所有错误）
-    表格配置列表 = [
+    # 项目配置（5个项目）
+    所有表格配置 = [
         {"id": "1UeYJ9e2almMVjO_X0Ts6oE7CmCoNN5IPO82cMMugLBw", "name": "jeetup项目", "sheets": ["ADC", "UD"], "date_col": 1, "result_cols": [12]},
         {"id": "1F_cu4GpofGbT0DGqNzO6vTYOUKTreGTRQzIQgnhs6is", "name": "lakhup项目", "sheets": ["ADC"], "date_col": 1, "result_cols": [4]},
         {"id": "1LTnKqi_h_fcalboeB75IxVTGjJsh6HtO7_YOYH6oHic", "name": "kanzplay项目", "sheets": ["YSS", "FS", "UD"], "date_col": 1, "result_cols": [4]},
         {"id": "1tSrNji1nheomDN_jjHZpFVJwzY2-DGQ_N-jAqbS95yg", "name": "falcowin项目", "sheets": ["ADC", "YSS", "AdRachel", "FS", "Pizzads"], "date_col": 1, "result_cols": [3]},
-        {"id": "1laHyK6yB_mmc1ZyC79VCD3WOrkRylDXtzuGJJ9HjLhQ", "name": "snakerwin项目", "sheets": ["ADC", "YOJOY", "YSS", "Pizzads", "AdRachel", "UD", "FS"], "date_col": 1, "result_cols": [3]}  # 修复拼写 + 加逗号
+        {"id": "1laHyK6yB_mmc1ZyC79VCD3WOrkRylDXtzuGJJ9HjLhQ", "name": "snakerwin项目", "sheets": ["ADC", "YOJOY", "YSS", "Pizzads", "AdRachel", "UD", "FS"], "date_col": 1, "result_cols": [4]}
     ]
+
+    # 只保留用户选择的项目配置
+    表格配置列表 = [cfg for cfg in 所有表格配置 if cfg["name"] in selected_projects]
+
+    if not 表格配置列表:
+        st.warning("请至少选择一个项目")
+        st.stop()
 
     if st.button("🚀 开始抓取数据", type="primary"):
         with st.spinner("正在从 Google Sheets 抓取数据，请稍等..."):
@@ -132,7 +159,6 @@ if uploaded_file is not None:
             
             st.success(f"🎉 抓取完成！共找到 **{len(所有结果)}** 条数据")
            
-            # 美化表格显示
             st.dataframe(
                 新结果,
                 use_container_width=True,
@@ -140,7 +166,6 @@ if uploaded_file is not None:
                 column_config={0: st.column_config.DateColumn("日期")}
             )
             
-            # 下载按钮
             output = io.StringIO()
             output.write("\t".join(表头) + "\n")
             for row in 新结果:
@@ -152,11 +177,11 @@ if uploaded_file is not None:
                 mime="text/plain"
             )
         else:
-            st.warning("所选日期内没有找到任何数据")
+            st.warning("所选日期和项目内没有找到任何数据")
 
 else:
     st.info("👆 请先上传 service_account.json 密钥文件")
-    st.markdown("### 使用步骤：\n1. 上传密钥文件\n2. 选择日期\n3. 点击开始抓取")
+    st.markdown("### 使用步骤：\n1. 上传密钥文件\n2. 在左侧选择项目和日期\n3. 点击开始抓取")
 
 st.markdown("---")
 st.caption("你的专属数据抓取工具 • 永久免费 • 随时随地可用")
