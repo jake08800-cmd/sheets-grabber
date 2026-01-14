@@ -4,6 +4,7 @@ from google.oauth2.service_account import Credentials
 import io
 from datetime import datetime, timedelta
 import json
+import pandas as pd  # 用于对比和 DataFrame 处理
 
 # ================ 美化设置 ================
 st.set_page_config(
@@ -51,25 +52,22 @@ with st.sidebar:
     st.image("https://streamlit.io/images/brand/streamlit-mark-color.png", width=100)
     st.header("🌟 当前支持项目")
 
-    # 所有项目列表（用于展示和选择）
     all_projects = [
-        "jeetup项目", "lakhup项目", "kanzplay项目", 
+        "jeetup项目", "lakhup项目", "kanzplay项目",
         "falcowin项目", "snakerwin项目"
     ]
     colors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7"]
 
-    # 美化展示
     for p, c in zip(all_projects, colors):
         st.markdown(f"<span class='project-tag' style='background-color:{c}; color:black'>{p}</span>", unsafe_allow_html=True)
 
     st.markdown("---")
     st.subheader("🛠 抓取设置")
 
-    # 新增：项目多选框（默认全选）
     selected_projects = st.multiselect(
         "选择要抓取的项目",
         options=all_projects,
-        default=all_projects,  # 默认全选
+        default=all_projects,
         help="不选任何项目将无法抓取"
     )
 
@@ -116,7 +114,7 @@ if uploaded_file is not None:
         {"id": "1UeYJ9e2almMVjO_X0Ts6oE7CmCoNN5IPO82cMMugLBw", "name": "jeetup项目", "sheets": ["ADC", "UD"], "date_col": 1, "result_cols": [12]},
         {"id": "1F_cu4GpofGbT0DGqNzO6vTYOUKTreGTRQzIQgnhs6is", "name": "lakhup项目", "sheets": ["ADC"], "date_col": 1, "result_cols": [4]},
         {"id": "1LTnKqi_h_fcalboeB75IxVTGjJsh6HtO7_YOYH6oHic", "name": "kanzplay项目", "sheets": ["YSS", "FS", "UD"], "date_col": 1, "result_cols": [4]},
-        {"id": "1tSrNji1nheomDN_jjHZpFVJwzY2-DGQ_N-jAqbS95yg", "name": "falcowin项目", "sheets": ["ADC", "YSS", "AdRachel", "FS", "Pizzads","UD"], "date_col": 1, "result_cols": [3]},
+        {"id": "1tSrNji1nheomDN_jjHZpFVJwzY2-DGQ_N-jAqbS95yg", "name": "falcowin项目", "sheets": ["ADC", "YSS", "AdRachel", "FS", "Pizzads", "UD"], "date_col": 1, "result_cols": [3]},
         {"id": "1laHyK6yB_mmc1ZyC79VCD3WOrkRylDXtzuGJJ9HjLhQ", "name": "snakerwin项目", "sheets": ["ADC", "YOJOY", "YSS", "Pizzads", "AdRachel", "UD", "FS"], "date_col": 1, "result_cols": [4]}
     ]
 
@@ -156,28 +154,156 @@ if uploaded_file is not None:
                 数据 = r[:-3]
                 新行 = [r[-1], r[-3], r[-2]] + 数据 + [""] * (max_cols - len(数据))
                 新结果.append(新行)
-            
+
             st.success(f"🎉 抓取完成！共找到 **{len(所有结果)}** 条数据")
-           
+
             st.dataframe(
                 新结果,
                 use_container_width=True,
                 hide_index=True,
                 column_config={0: st.column_config.DateColumn("日期")}
             )
-            
+
             output = io.StringIO()
             output.write("\t".join(表头) + "\n")
             for row in 新结果:
                 output.write("\t".join(map(str, row)) + "\n")
             st.download_button(
-                "📥 下载结果文件（TXT）",
+                "📥 下载抓取结果（TXT）",
                 data=output.getvalue(),
                 file_name=f"项目数据_{'_'.join(目标日期列表)}.txt",
                 mime="text/plain"
             )
-        else:
-            st.warning("所选日期和项目内没有找到任何数据")
+
+            # ──────────────── 新增：与汇总表对比（按日期 + 渠道） ────────────────
+            st.markdown("---")
+            st.subheader("📊 与汇总表对比结果（日期 + 渠道）")
+
+            try:
+                # 汇总表ID（替换成你的）
+                汇总表ID = "1NW-j8d3HhAHxOZxX5EhQfhcnWyQBwpZ1Yqt-3A6tpd4"  # ← 替换成实际ID
+
+                # 项目 → 汇总 sheet 映射
+                项目_汇总_sheet映射 = {
+                    "jeetup项目": "jeetup",
+                    "lakhup项目": "lakhup",
+                    "kanzplay项目": "kanz",
+                    "falcowin项目": "falcowin",
+                    "snakerwin项目": "Saherwin（AUE)"
+                }
+
+                汇总_date_col = 1
+                汇总_channel_col = 2
+                汇总_value_col = 3
+
+                汇总_spreadsheet = client.open_by_key(汇总表ID)
+                对比结果 = []
+
+                for _, 抓取行 in pd.DataFrame(新结果, columns=表头).iterrows():
+                    日期 = 抓取行['日期']
+                    项目 = 抓取行['来源项目']
+                    渠道 = 抓取行['来源Sheet']
+
+                    汇总_sheet_name = 项目_汇总_sheet映射.get(项目)
+                    if not 汇总_sheet_name:
+                        对比结果.append({
+                            "日期": 日期,
+                            "项目": 项目,
+                            "渠道": 渠道,
+                            "抓取值": float(抓取行.get('数据列1', 0)),
+                            "汇总值": "未配置",
+                            "差值": "N/A",
+                            "状态": "未配置"
+                        })
+                        continue
+
+                    try:
+                        汇总_sheet = 汇总_spreadsheet.worksheet(汇总_sheet_name)
+                        汇总_data = 汇总_sheet.get_all_values()
+
+                        if len(汇总_data) <= 1:
+                            对比结果.append({
+                                "日期": 日期,
+                                "项目": 项目,
+                                "渠道": 渠道,
+                                "抓取值": float(抓取行.get('数据列1', 0)),
+                                "汇总值": "空表",
+                                "差值": "N/A",
+                                "状态": "空表"
+                            })
+                            continue
+
+                        汇总_df = pd.DataFrame(汇总_data[1:], columns=汇总_data[0])
+                        汇总_df['日期'] = 汇总_df.iloc[:, 汇总_date_col-1].astype(str).str.strip()
+                        汇总_df['渠道'] = 汇总_df.iloc[:, 汇总_channel_col-1].astype(str).str.strip()
+
+                        匹配行 = 汇总_df[(汇总_df['日期'] == 日期) & (汇总_df['渠道'] == 渠道)]
+
+                        if not 匹配行.empty:
+                            汇总值 = float(匹配行.iloc[0, 汇总_value_col-1]) if pd.notna(匹配行.iloc[0, 汇总_value_col-1]) else 0
+                            抓取值 = float(抓取行.get('数据列1', 0))
+
+                            差值 = 抓取值 - 汇总值
+                            对比结果.append({
+                                "日期": 日期,
+                                "项目": 项目,
+                                "渠道": 渠道,
+                                "抓取值": 抓取值,
+                                "汇总值": 汇总值,
+                                "差值": 差值,
+                                "状态": "一致" if abs(差值) < 0.01 else "差异"
+                            })
+                        else:
+                            对比结果.append({
+                                "日期": 日期,
+                                "项目": 项目,
+                                "渠道": 渠道,
+                                "抓取值": float(抓取行.get('数据列1', 0)),
+                                "汇总值": "未找到",
+                                "差值": "N/A",
+                                "状态": "缺失"
+                            })
+
+                    except gspread.WorksheetNotFound:
+                        对比结果.append({
+                            "日期": 日期,
+                            "项目": 项目,
+                            "渠道": 渠道,
+                            "抓取值": float(抓取行.get('数据列1', 0)),
+                            "汇总值": "Sheet不存在",
+                            "差值": "N/A",
+                            "状态": "Sheet缺失"
+                        })
+                    except Exception as e:
+                        st.error(f"对比 {项目} - {渠道} 时出错：{e}")
+
+                if 对比结果:
+                    对比_df = pd.DataFrame(对比结果)
+                    st.dataframe(对比_df.style.applymap(
+                        lambda x: 'background-color: #ffebee' if x in ["差异", "缺失", "未配置", "空表", "Sheet缺失"] else '',
+                        subset=['状态']
+                    ))
+
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("异常行数", len(对比_df[对比_df['状态'] != "一致"]))
+                    col2.metric("总差值", f"{对比_df['差值'].sum():.2f}")
+                    col3.metric("一致率", f"{(len(对比_df[对比_df['状态'] == '一致']) / len(对比_df)) * 100:.1f}%")
+
+                    output对比 = io.StringIO()
+                    output对比.write("\t".join(对比_df.columns) + "\n")
+                    for _, row in 对比_df.iterrows():
+                        output对比.write("\t".join(map(str, row)) + "\n")
+                    st.download_button(
+                        "📥 下载对比结果（TXT）",
+                        data=output对比.getvalue(),
+                        file_name=f"渠道对比_{'_'.join(目标日期列表)}.txt",
+                        mime="text/plain"
+                    )
+                else:
+                    st.info("没有可对比的数据")
+
+    except Exception as e:
+        st.error(f"读取汇总表失败：{e}")
 
 else:
     st.info("👆 请先上传 service_account.json 密钥文件")
