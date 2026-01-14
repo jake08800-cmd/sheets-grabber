@@ -179,6 +179,8 @@ if uploaded_file is not None:
                 st.markdown("---")
                 st.subheader("📊 与汇总表对比结果（日期 + 渠道）")
 
+                对比结果 = []  # 先初始化，避免 NameError
+
                 try:
                     # 汇总表ID（替换成你的）
                     汇总表ID = "1NW-j8d3HhAHxOZxX5EhQfhcnWyQBwpZ1Yqt-3A6tpd4"
@@ -197,7 +199,6 @@ if uploaded_file is not None:
                     汇总_value_col = 3
 
                     汇总_spreadsheet = client.open_by_key(汇总表ID)
-                    对比结果 = []
 
                     for _, 抓取行 in pd.DataFrame(新结果, columns=表头).iterrows():
                         日期 = 抓取行['日期']
@@ -277,33 +278,34 @@ if uploaded_file is not None:
                         except Exception as e:
                             st.error(f"对比 {项目} - {渠道} 时出错：{e}")
 
+                    if 对比结果:
+                        对比_df = pd.DataFrame(对比结果)
+                        st.dataframe(对比_df.style.applymap(
+                            lambda x: 'background-color: #ffebee' if x in ["差异", "缺失", "未配置", "空表", "Sheet缺失"] else '',
+                            subset=['状态']
+                        ))
+
+                        col1, col2, col3 = st.columns(3)
+                        col1.metric("异常行数", len(对比_df[对比_df['状态'] != "一致"]))
+                        col2.metric("总差值", f"{对比_df['差值'].sum():.2f}")
+                        col3.metric("一致率", f"{(len(对比_df[对比_df['状态'] == '一致']) / len(对比_df)) * 100:.1f}%")
+
+                        output对比 = io.StringIO()
+                        output对比.write("\t".join(对比_df.columns) + "\n")
+                        for _, row in 对比_df.iterrows():
+                            output对比.write("\t".join(map(str, row)) + "\n")
+                        st.download_button(
+                            "📥 下载对比结果（TXT）",
+                            data=output对比.getvalue(),
+                            file_name=f"渠道对比_{'_'.join(目标日期列表)}.txt",
+                            mime="text/plain"
+                        )
+                    else:
+                        st.info("没有可对比的数据")
+
                 except Exception as e:
-                    st.error(f"读取汇总表失败：{e}")
-
-                if 对比结果:
-                    对比_df = pd.DataFrame(对比结果)
-                    st.dataframe(对比_df.style.applymap(
-                        lambda x: 'background-color: #ffebee' if x in ["差异", "缺失", "未配置", "空表", "Sheet缺失"] else '',
-                        subset=['状态']
-                    ))
-
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric("异常行数", len(对比_df[对比_df['状态'] != "一致"]))
-                    col2.metric("总差值", f"{对比_df['差值'].sum():.2f}")
-                    col3.metric("一致率", f"{(len(对比_df[对比_df['状态'] == '一致']) / len(对比_df)) * 100:.1f}%")
-
-                    output对比 = io.StringIO()
-                    output对比.write("\t".join(对比_df.columns) + "\n")
-                    for _, row in 对比_df.iterrows():
-                        output对比.write("\t".join(map(str, row)) + "\n")
-                    st.download_button(
-                        "📥 下载对比结果（TXT）",
-                        data=output对比.getvalue(),
-                        file_name=f"渠道对比_{'_'.join(目标日期列表)}.txt",
-                        mime="text/plain"
-                    )
-                else:
-                    st.info("没有可对比的数据")
+                    st.error(f"读取汇总表失败：{str(e)}")
+                    st.info("可能原因：1. 汇总表ID错误 2. 服务账户未被分享到汇总表 3. 网络/VPN问题")
 
 else:
     st.info("👆 请先上传 service_account.json 密钥文件")
