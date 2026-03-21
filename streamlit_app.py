@@ -50,29 +50,32 @@ st.markdown("**专业 · 简洁 · 高效** — 你的专属数据助手")
 with st.sidebar:
     st.image("https://streamlit.io/images/brand/streamlit-mark-color.png", width=100)
     st.header("🌟 当前支持项目")
-
+    
     # 所有项目列表（用于展示和选择）
     all_projects = [
-        "jeetup项目", "lakhup项目", "kanzplay项目", 
-        "falcowin项目", "snakerwin项目"
+        "jeetup项目", "lakhup项目", "kanzplay项目",
+        "falcowin项目", "snakerwin项目", "CW项目"
     ]
-    colors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7"]
+    
+    # 颜色列表（即使项目增加也能循环使用）
+    colors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7", "#d4a5a5"]
 
-    # 美化展示
-    for p, c in zip(all_projects, colors):
+    # 美化展示 - 使用取模方式分配颜色
+    for i, p in enumerate(all_projects):
+        c = colors[i % len(colors)]
         st.markdown(f"<span class='project-tag' style='background-color:{c}; color:black'>{p}</span>", unsafe_allow_html=True)
-
+    
     st.markdown("---")
     st.subheader("🛠 抓取设置")
-
-    # 新增：项目多选框（默认全选）
+    
+    # 项目多选框（默认全选）
     selected_projects = st.multiselect(
         "选择要抓取的项目",
         options=all_projects,
         default=all_projects,  # 默认全选
         help="不选任何项目将无法抓取"
     )
-
+    
     st.caption(f"今天是 {datetime.today().strftime('%Y-%m-%d')}")
 
 # 上传密钥
@@ -105,19 +108,22 @@ if uploaded_file is not None:
         format_func=lambda d: d.strftime("%Y-%m-%d"),
         help="可选择多个日期批量抓取"
     )
+
     if not selected_dates:
         st.warning("请至少选择一个日期")
         st.stop()
+
     目标日期列表 = [d.strftime("%Y-%m-%d") for d in selected_dates]
     st.info(f"**即将抓取：** {', '.join(目标日期列表)}")
 
-    # 项目配置（5个项目）
+    # 项目配置（6个项目）
     所有表格配置 = [
-        {"id": "1UeYJ9e2almMVjO_X0Ts6oE7CmCoNN5IPO82cMMugLBw", "name": "jeetup项目", "sheets": ["ADC", "UD"], "date_col": 1, "result_cols": [8]},
-        {"id": "1F_cu4GpofGbT0DGqNzO6vTYOUKTreGTRQzIQgnhs6is", "name": "lakhup项目", "sheets": ["ADC"], "date_col": 1, "result_cols": [6]},
-        {"id": "1LTnKqi_h_fcalboeB75IxVTGjJsh6HtO7_YOYH6oHic", "name": "kanzplay项目", "sheets": ["YSS", "FS", "UD", "pluck", "XCH"], "date_col": 1, "result_cols": [6]},
-        {"id": "1tSrNji1nheomDN_jjHZpFVJwzY2-DGQ_N-jAqbS95yg", "name": "falcowin项目", "sheets": ["ADC", "YSS", "AdRachel", "FS", "Pizzads","UD"], "date_col": 1, "result_cols": [5]},
-        {"id": "1laHyK6yB_mmc1ZyC79VCD3WOrkRylDXtzuGJJ9HjLhQ", "name": "snakerwin项目", "sheets": ["ADC", "YOJOY", "YSS", "Pizzads", "AdRachel", "UD", "FS"], "date_col": 1, "result_cols": [5,9]}
+        {"id": "1UeYJ9e2almMVjO_X0Ts6oE7CmCoNN5IPO82cMMugLBw", "name": "jeetup项目", "sheets": ["ADC", "UD"], "date_col": 1, "result_cols": [12,8]},
+        {"id": "1F_cu4GpofGbT0DGqNzO6vTYOUKTreGTRQzIQgnhs6is", "name": "lakhup项目", "sheets": ["ADC"], "date_col": 1, "result_cols": [4,6]},
+        {"id": "1LTnKqi_h_fcalboeB75IxVTGjJsh6HtO7_YOYH6oHic", "name": "kanzplay项目", "sheets": ["YSS", "FS", "UD", "pluck", "XCH"], "date_col": 1, "result_cols": [4,6]},
+        {"id": "1tSrNji1nheomDN_jjHZpFVJwzY2-DGQ_N-jAqbS95yg", "name": "falcowin项目", "sheets": ["ADC", "YSS", "AdRachel", "FS", "Pizzads","UD"], "date_col": 1, "result_cols": [3,5]},
+        {"id": "1laHyK6yB_mmc1ZyC79VCD3WOrkRylDXtzuGJJ9HjLhQ", "name": "snakerwin项目", "sheets": ["ADC", "YOJOY", "YSS", "Pizzads", "AdRachel", "UD", "FS"], "date_col": 1, "result_cols": [5,9]},
+        {"id": "1fwzuSCipdMXBwjZtiG7OwiiW9006L-YXT_Qfk1go7ME", "name": "CW项目", "sheets": ["ADC", "YSS", "XM"], "date_col": 1, "result_cols": [3,5]}
     ]
 
     # 只保留用户选择的项目配置
@@ -156,16 +162,16 @@ if uploaded_file is not None:
                 数据 = r[:-3]
                 新行 = [r[-1], r[-3], r[-2]] + 数据 + [""] * (max_cols - len(数据))
                 新结果.append(新行)
-            
-            st.success(f"🎉 抓取完成！共找到 **{len(所有结果)}** 条数据")
            
+            st.success(f"🎉 抓取完成！共找到 **{len(所有结果)}** 条数据")
+          
             st.dataframe(
                 新结果,
                 use_container_width=True,
                 hide_index=True,
                 column_config={0: st.column_config.DateColumn("日期")}
             )
-            
+           
             output = io.StringIO()
             output.write("\t".join(表头) + "\n")
             for row in 新结果:
