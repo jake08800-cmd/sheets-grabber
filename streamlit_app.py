@@ -51,16 +51,13 @@ with st.sidebar:
     st.image("https://streamlit.io/images/brand/streamlit-mark-color.png", width=100)
     st.header("🌟 当前支持项目")
     
-    # 所有项目列表（用于展示和选择）
     all_projects = [
         "jeetup项目", "lakhup项目", "kanzplay项目",
         "falcowin项目", "snakerwin项目", "CW项目"
     ]
     
-    # 颜色列表（即使项目增加也能循环使用）
     colors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7", "#d4a5a5"]
 
-    # 美化展示 - 使用取模方式分配颜色
     for i, p in enumerate(all_projects):
         c = colors[i % len(colors)]
         st.markdown(f"<span class='project-tag' style='background-color:{c}; color:black'>{p}</span>", unsafe_allow_html=True)
@@ -68,11 +65,10 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("🛠 抓取设置")
     
-    # 项目多选框（默认全选）
     selected_projects = st.multiselect(
         "选择要抓取的项目",
         options=all_projects,
-        default=all_projects,  # 默认全选
+        default=all_projects,
         help="不选任何项目将无法抓取"
     )
     
@@ -126,7 +122,6 @@ if uploaded_file is not None:
         {"id": "1fwzuSCipdMXBwjZtiG7OwiiW9006L-YXT_Qfk1go7ME", "name": "CW项目", "sheets": ["ADC", "YSS", "XM"], "date_col": 1, "result_cols": [3,5]}
     ]
 
-    # 只保留用户选择的项目配置
     表格配置列表 = [cfg for cfg in 所有表格配置 if cfg["name"] in selected_projects]
 
     if not 表格配置列表:
@@ -155,35 +150,59 @@ if uploaded_file is not None:
                     st.error(f"无法打开 {配置['name']}：{e}")
 
         if 所有结果:
-            max_cols = max(len(r) - 3 for r in 所有结果)
-            表头 = ["日期", "来源项目", "来源Sheet"] + [f"数据列{i}" for i in range(1, max_cols + 1)]
+            # 计算额外列的最大数量（扣除 日期/项目/投放 后的列数）
+            max_extra_cols = max(len(r) - 3 for r in 所有结果) if 所有结果 else 0
+
+            # 详细的表头
+            表头 = [
+                "日期",
+                "项目名称",
+                "投放名称",
+                "花费（含服务费+汇损）",
+                "广告消耗"
+            ]
+            # 如果有超过2个 result_cols 的项目，则补充额外列
+            for i in range(3, max_extra_cols + 1):
+                表头.append(f"数据列{i}")
+
+            # 构建显示/下载用的数据行
             新结果 = []
             for r in 所有结果:
-                数据 = r[:-3]
-                新行 = [r[-1], r[-3], r[-2]] + 数据 + [""] * (max_cols - len(数据))
+                固定部分 = [r[-1], r[-3], r[-2]]          # 日期, 项目名称, 投放名称
+                数据部分 = r[:-3]                           # 所有 result_cols 的值
+                填充 = [""] * (max_extra_cols - len(数据部分))
+                新行 = 固定部分 + 数据部分 + 填充
                 新结果.append(新行)
-           
-            st.success(f"🎉 抓取完成！共找到 **{len(所有结果)}** 条数据")
-          
+
+            st.success(f"🎉 抓取完成！共找到 **{len(所有结果)}** 条匹配数据")
+
+            # 显示 DataFrame（日期列格式化）
             st.dataframe(
                 新结果,
                 use_container_width=True,
                 hide_index=True,
-                column_config={0: st.column_config.DateColumn("日期")}
+                column_config={
+                    "日期": st.column_config.DateColumn("日期"),
+                    "花费（含服务费+汇损）": st.column_config.NumberColumn("花费（含服务费+汇损）", format="¥ %.2f"),
+                    "广告消耗": st.column_config.NumberColumn("广告消耗", format="¥ %.2f"),
+                }
             )
-           
+
+            # 生成下载文件（使用中文表头 + tab 分隔）
             output = io.StringIO()
             output.write("\t".join(表头) + "\n")
             for row in 新结果:
                 output.write("\t".join(map(str, row)) + "\n")
+
             st.download_button(
-                "📥 下载结果文件（TXT）",
+                "📥 下载结果文件（TXT / 可导入Excel）",
                 data=output.getvalue(),
                 file_name=f"项目数据_{'_'.join(目标日期列表)}.txt",
                 mime="text/plain"
             )
+
         else:
-            st.warning("所选日期和项目内没有找到任何数据")
+            st.warning("所选日期和项目组合内没有找到任何匹配数据")
 
 else:
     st.info("👆 请先上传 service_account.json 密钥文件")
